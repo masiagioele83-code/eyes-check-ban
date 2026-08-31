@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Eyes Check Ban</title>
+
+    <!-- PWA / iOS install support -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Eyes Check Ban">
+    <link rel="apple-touch-icon" href="icon-180.png">
+    <meta name="theme-color" content="#000000">
+
+    <style>
+        * { box-sizing: border-box; }
+
+        :root {
+            --line: rgba(255,255,255,0.16);
+        }
+
+        html, body { height: 100%; }
+
+        body {
+            font-family: 'Georgia', 'Times New Roman', serif;
+            color: #f3f3f3;
+            margin: 0;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Sfondo a piena pagina, in scala di grigi */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background: url('bg.jpeg') center center / cover no-repeat;
+            filter: grayscale(100%) brightness(0.5);
+            z-index: -2;
+        }
+        body::after {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at 50% 45%, rgba(0,0,0,0.4), rgba(0,0,0,0.92) 78%);
+            z-index: -1;
+        }
+
+        .card {
+            width: 100%;
+            max-width: 380px;
+            background: rgba(10, 10, 10, 0.75);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            padding: 40px 30px 34px;
+            text-align: center;
+            backdrop-filter: blur(14px) saturate(120%);
+            -webkit-backdrop-filter: blur(14px) saturate(120%);
+            box-shadow:
+                0 20px 60px rgba(0,0,0,0.65),
+                0 0 0 1px rgba(255,255,255,0.03) inset;
+            animation: rise 0.6s cubic-bezier(.2,.8,.2,1) both;
+        }
+
+        @keyframes rise {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .eye {
+            width: 46px;
+            height: 46px;
+            margin: 0 auto 18px;
+            border-radius: 50%;
+            border: 1px solid var(--line);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        .eye::before {
+            content: "";
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #fff;
+            box-shadow: 0 0 12px 2px rgba(255,255,255,0.5);
+        }
+
+        h1 {
+            font-size: 1.5em;
+            font-weight: 400;
+            letter-spacing: 2.5px;
+            text-transform: uppercase;
+            margin: 0 0 6px;
+        }
+
+        .subtitle {
+            font-size: 0.78em;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.45);
+            margin: 0 0 28px;
+            font-style: italic;
+        }
+
+        .field { position: relative; margin-bottom: 22px; }
+
+        input {
+            width: 100%;
+            padding: 14px 16px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            color: #fff;
+            font-family: inherit;
+            font-size: 1em;
+            letter-spacing: 0.5px;
+            transition: border-color 0.25s, background 0.25s;
+        }
+        input:focus {
+            outline: none;
+            border-color: #fff;
+            background: rgba(255,255,255,0.06);
+        }
+        input::placeholder { color: rgba(255,255,255,0.35); font-style: italic; }
+
+        button {
+            width: 100%;
+            background: transparent;
+            color: #fff;
+            border: 1px solid #fff;
+            padding: 14px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 400;
+            font-family: inherit;
+            font-size: 0.95em;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            position: relative;
+            overflow: hidden;
+            transition: color 0.3s;
+        }
+        button::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: #fff;
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.35s ease;
+            z-index: -1;
+        }
+        button:hover { color: #000; }
+        button:hover::before { transform: scaleX(1); }
+        button:active { transform: scale(0.98); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        footer {
+            margin-top: 26px;
+            font-size: 0.65em;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: rgba(255,255,255,0.25);
+        }
+
+        /* Overlay modale per il risultato */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            padding: 20px;
+            opacity: 0;
+            transition: opacity 0.25s ease;
+        }
+        .modal-overlay.visible {
+            display: flex;
+            opacity: 1;
+        }
+        .modal-box {
+            background: #111;
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 32px 28px;
+            max-width: 320px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+            transform: scale(0.92);
+            transition: transform 0.25s ease;
+        }
+        .modal-overlay.visible .modal-box {
+            transform: scale(1);
+        }
+        .modal-icon {
+            width: 40px;
+            height: 40px;
+            margin: 0 auto 16px;
+            border-radius: 50%;
+            border: 1px solid var(--line);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1em;
+        }
+        .modal-message {
+            font-size: 1.05em;
+            font-style: italic;
+            letter-spacing: 0.3px;
+            line-height: 1.5;
+            margin-bottom: 24px;
+            word-wrap: break-word;
+        }
+        .modal-close {
+            width: 100%;
+            background: #fff;
+            color: #000;
+            border: 1px solid #fff;
+            padding: 10px 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 0.85em;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            transition: background 0.2s, color 0.2s;
+        }
+        .modal-close:hover { background: transparent; color: #fff; }
+
+        .spinner {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255,255,255,0.25);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Pulsante controllo audio */
+        .audio-toggle {
+            position: fixed;
+            top: 18px;
+            right: 18px;
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            background: rgba(10,10,10,0.7);
+            border: 1px solid var(--line);
+            color: #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.1em;
+            z-index: 20;
+            backdrop-filter: blur(6px);
+            transition: background 0.2s;
+        }
+        .audio-toggle:hover { background: rgba(30,30,30,0.85); }
+
+        @media (max-width: 420px) {
+            .card { padding: 32px 22px 28px; border-radius: 10px; }
+            h1 { font-size: 1.3em; letter-spacing: 2px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Audio di sottofondo -->
+<audio id="bgAudio" src="bg-audio.mp3" loop preload="auto"></audio>
+<button class="audio-toggle" id="audioToggle" title="Attiva/disattiva audio">🔇</button>
+
+<div class="card">
+    <div class="eye"></div>
+    <h1>Eyes Check Ban</h1>
+    <p class="subtitle">Number status lookup</p>
+
+    <div class="field">
+        <input type="text" id="phoneInput" placeholder="e.g. 39347xxxxxxx" autocomplete="off" />
+    </div>
+
+    <button id="checkBtn" onclick="checkNumber()">Verifica</button>
+
+    <footer>eyes &middot; status verification</footer>
+</div>
+
+<!-- Overlay avviso risultato -->
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal-box">
+        <div class="modal-icon" id="modalIcon">i</div>
+        <div class="modal-message" id="modalMessage"></div>
+        <button class="modal-close" onclick="closeModal()">Chiudi</button>
+    </div>
+</div>
+
+<script>
+    function showModal(message, icon) {
+        document.getElementById('modalMessage').textContent = message;
+        document.getElementById('modalIcon').textContent = icon;
+        document.getElementById('modalOverlay').classList.add('visible');
+    }
+
+    function closeModal() {
+        document.getElementById('modalOverlay').classList.remove('visible');
+    }
+
+    async function checkNumber() {
+        const input = document.getElementById('phoneInput');
+        const phoneNumber = input.value.trim();
+        const btn = document.getElementById('checkBtn');
+
+        if (!phoneNumber) {
+            showModal('Inserisci un numero valido.', '!');
+            return;
+        }
+
+        btn.disabled = true;
+        const originalText = btn.textContent;
+        btn.innerHTML = '<span class="spinner"></span>Verifica...';
+
+        try {
+            const response = await fetch('/api/check-ban', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phoneNumber })
+            });
+
+            const data = await response.json();
+            showModal(data.message, data.status === 'banned' ? '×' : '✓');
+        } catch (err) {
+            showModal('Errore di connessione al server.', '!');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = originalText;
+        }
+    }
+
+    document.getElementById('phoneInput').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') checkNumber();
+    });
+
+    document.getElementById('modalOverlay').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) closeModal();
+    });
+
+    // Gestione audio di sottofondo
+    const bgAudio = document.getElementById('bgAudio');
+    const audioToggle = document.getElementById('audioToggle');
+    bgAudio.volume = 0.35;
+    let audioPlaying = false;
+
+    function setAudioIcon() {
+        audioToggle.textContent = audioPlaying ? '🔊' : '🔇';
+    }
+
+    audioToggle.addEventListener('click', () => {
+        if (audioPlaying) {
+            bgAudio.pause();
+            audioPlaying = false;
+        } else {
+            bgAudio.play().then(() => { audioPlaying = true; setAudioIcon(); }).catch(() => {});
+        }
+        setAudioIcon();
+    });
+
+    // Prova ad avviare l'audio automaticamente al primo click/tocco ovunque nella pagina
+    function tryAutoStart() {
+        if (!audioPlaying) {
+            bgAudio.play().then(() => { audioPlaying = true; setAudioIcon(); }).catch(() => {});
+        }
+        document.removeEventListener('click', tryAutoStart);
+        document.removeEventListener('touchstart', tryAutoStart);
+    }
+    document.addEventListener('click', tryAutoStart);
+    document.addEventListener('touchstart', tryAutoStart);
+
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js').catch(console.error);
+        });
+    }
+</script>
+
+</body>
+</html>
