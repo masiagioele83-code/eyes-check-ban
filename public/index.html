@@ -113,6 +113,20 @@
 
         .field { position: relative; margin-bottom: 22px; }
 
+        .phone-row {
+            display: flex;
+            gap: 8px;
+        }
+        .prefix-input {
+            width: 78px;
+            flex-shrink: 0;
+            text-align: center;
+        }
+        .number-input {
+            flex: 1;
+            min-width: 0;
+        }
+
         input {
             width: 100%;
             padding: 14px 16px;
@@ -292,8 +306,9 @@
     <h1>Eyes Check Ban</h1>
     <p class="subtitle">Number status lookup</p>
 
-    <div class="field">
-        <input type="text" id="phoneInput" placeholder="e.g. 39347xxxxxxx" autocomplete="off" />
+    <div class="field phone-row">
+        <input type="text" id="prefixInput" class="prefix-input" value="+1" inputmode="numeric" autocomplete="off" />
+        <input type="text" id="numberInput" class="number-input" placeholder="123456789" inputmode="numeric" autocomplete="off" />
     </div>
 
     <button id="checkBtn" onclick="checkNumber()">Verifica</button>
@@ -322,12 +337,16 @@
     }
 
     async function checkNumber() {
-        const input = document.getElementById('phoneInput');
-        const phoneNumber = input.value.trim();
+        const prefixEl = document.getElementById('prefixInput');
+        const numberEl = document.getElementById('numberInput');
         const btn = document.getElementById('checkBtn');
 
-        if (!phoneNumber) {
-            showModal('Inserisci un numero valido.', '!');
+        const prefixDigits = prefixEl.value.replace(/\D/g, '');
+        const numberDigits = numberEl.value.replace(/\D/g, '');
+        const phoneNumber = '+' + prefixDigits + numberDigits;
+
+        if (!prefixDigits || !numberDigits) {
+            showModal('Inserisci prefisso e numero validi.', '!');
             return;
         }
 
@@ -352,7 +371,25 @@
         }
     }
 
-    document.getElementById('phoneInput').addEventListener('keydown', (e) => {
+    // Solo cifre nel campo prefisso, con '+' sempre fisso all'inizio
+    const prefixInput = document.getElementById('prefixInput');
+    prefixInput.addEventListener('input', () => {
+        const digits = prefixInput.value.replace(/\D/g, '');
+        prefixInput.value = '+' + digits;
+    });
+    prefixInput.addEventListener('keydown', (e) => {
+        // Impedisce di cancellare il '+' iniziale con backspace/canc quando il cursore è all'inizio
+        if ((e.key === 'Backspace' || e.key === 'Delete') && prefixInput.selectionStart <= 1 && prefixInput.selectionEnd <= 1) {
+            e.preventDefault();
+        }
+    });
+
+    // Solo cifre nel campo numero
+    const numberInput = document.getElementById('numberInput');
+    numberInput.addEventListener('input', () => {
+        numberInput.value = numberInput.value.replace(/\D/g, '');
+    });
+    numberInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') checkNumber();
     });
 
